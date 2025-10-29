@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  discordId String   @unique
+  username  String
+  createdAt DateTime @default(now())
+
+  reminders Reminder[] // 👈 связь с Reminder
+}
+
+model Reminder {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String
+  remindAt  DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model GuildConfig {
+  id         Int      @id @default(autoincrement())
+  guildId    String   @unique
+  logChannel String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
