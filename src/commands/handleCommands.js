@@ -159,10 +159,19 @@ module.exports = (client) => {
     if (interaction.commandName === "clear") {
       const amount = interaction.options.getInteger("количество");
 
-      // 1️⃣ Проверка прав
-      if (!interaction.member.permissions.has("ManageMessages")) {
+      // 🔒 Разрешённые роли (имена или ID)
+      const allowedRoles = ["Администратор", "Модератор"]; // замени на свои роли
+
+      const member = interaction.member;
+      const hasAllowedRole = member.roles.cache.some(
+        (role) =>
+          allowedRoles.includes(role.name) || allowedRoles.includes(role.id)
+      );
+
+      // 1️⃣ Проверка прав и ролей
+      if (!member.permissions.has("ManageMessages") && !hasAllowedRole) {
         return interaction.reply({
-          content: "❌ У тебя нет прав на удаление сообщений.",
+          content: "🚫 У вас недостаточно прав для удаления сообщений.",
           ephemeral: true,
         });
       }
@@ -178,7 +187,7 @@ module.exports = (client) => {
       try {
         // 3️⃣ Удаляем последние сообщения (включая команду)
         const messages = await interaction.channel.messages.fetch({
-          limit: amount ,
+          limit: amount,
         });
         const deleted = await interaction.channel.bulkDelete(messages, true);
 
