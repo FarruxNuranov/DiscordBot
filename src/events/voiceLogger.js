@@ -1,10 +1,4 @@
-const {
-  Events,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} = require("discord.js");
+const { Events, EmbedBuilder } = require("discord.js");
 const prisma = require("../utils/prismaClient");
 
 module.exports = (client) => {
@@ -33,32 +27,31 @@ module.exports = (client) => {
     const memberName = member.username;
 
     let embed;
-    let channelIdForButton = null;
 
     // 🟢 Подключился
     if (!oldState.channel && newState.channel) {
+      const channelLink = `[${newState.channel.name}](https://discord.com/channels/${guildId}/${newState.channel.id})`;
       embed = new EmbedBuilder()
         .setColor(0x57f287)
         .setTitle("🔊 Подключение к голосовому каналу")
         .setDescription(
-          `**Участник:** ${memberName} (${mention})\n**Канал:** <#${newState.channel.id}>`
+          `**Участник:** ${memberName} (${mention})\n**Канал:** ${channelLink}`
         )
         .setThumbnail(avatarURL)
         .setTimestamp();
-      channelIdForButton = newState.channel.id;
     }
 
     // 🔴 Вышел
     else if (oldState.channel && !newState.channel) {
+      const channelLink = `[${oldState.channel.name}](https://discord.com/channels/${guildId}/${oldState.channel.id})`;
       embed = new EmbedBuilder()
         .setColor(0xed4245)
         .setTitle("🔇 Отключение от голосового канала")
         .setDescription(
-          `**Участник:** ${memberName} (${mention})\n**Канал:** <#${oldState.channel.id}>`
+          `**Участник:** ${memberName} (${mention})\n**Канал:** ${channelLink}`
         )
         .setThumbnail(avatarURL)
         .setTimestamp();
-      channelIdForButton = oldState.channel.id;
     }
 
     // 🟡 Переместился
@@ -67,37 +60,20 @@ module.exports = (client) => {
       newState.channel &&
       oldState.channel.id !== newState.channel.id
     ) {
+      const oldLink = `[${oldState.channel.name}](https://discord.com/channels/${guildId}/${oldState.channel.id})`;
+      const newLink = `[${newState.channel.name}](https://discord.com/channels/${guildId}/${newState.channel.id})`;
+
       embed = new EmbedBuilder()
         .setColor(0xfee75c)
         .setTitle("↔️ Перемещение между голосовыми каналами")
         .setDescription(
-          `**Участник:** ${memberName} (${mention})\n**Из:** <#${oldState.channel.id}>\n**В:** <#${newState.channel.id}>`
+          `**Участник:** ${memberName} (${mention})\n**Из:** ${oldLink}\n**В:** ${newLink}`
         )
         .setThumbnail(avatarURL)
         .setTimestamp();
-      channelIdForButton = newState.channel.id;
     }
 
-    if (embed && channelIdForButton) {
-      // 🔘 Кнопка “Показать канал”
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setLabel("🔍 Показать канал")
-          .setStyle(ButtonStyle.Link)
-          .setURL(`https://discord.com/channels/${guildId}/${channelIdForButton}`)
-      );
-
-      // Отправляем embed с кнопкой
-      const msg = await logChannel.send({ embeds: [embed], components: [row] });
-
-      // ⏳ Через 30 секунд убираем кнопку (чистый лог)
-      setTimeout(async () => {
-        try {
-          await msg.edit({ components: [] });
-        } catch (err) {
-          console.error("Не удалось удалить кнопку:", err);
-        }
-      }, 30_000);
-    }
+    // ✅ Отправляем embed
+    if (embed) await logChannel.send({ embeds: [embed] });
   });
 };
